@@ -24,22 +24,11 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        RateLimiter::for('api', function (Request $request) {
-        return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-    });
-        // Panggil method untuk konfigurasi rate limiting
+        // Configure rate limiting for API routes
         $this->configureRateLimiting();
-
-        $this->routes(function () {
-            // Konfigurasi untuk route API
-            Route::middleware('api')
-                ->prefix('api')
-                ->group(base_path('routes/api.php'));
-
-            // Konfigurasi untuk route Web
-            Route::middleware('web')
-                ->group(base_path('routes/web.php'));
-        });
+        
+        // Note: In Laravel 11, routes are registered in bootstrap/app.php
+        // No need to manually register routes here
     }
 
     /**
