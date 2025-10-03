@@ -23,7 +23,6 @@ Route::get('/menus', [MenuController::class, 'index']);
 Route::get('/menus/{id}', [MenuController::class, 'show']);
 
 Route::get('/penjual', [PenjualController::class, 'getAllPenjual']);
-Route::get('/penjual/{id}', [PenjualController::class, 'getPenjualDetail']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -43,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/penjual/stats', [PenjualController::class, 'getPenjualStats']);
         Route::get('/penjual/menus', [MenuController::class, 'penjualMenus']);
         Route::get('/penjual/orders', [OrderController::class, 'penjualOrders']);
+        Route::get('/penjual/{id}', [PenjualController::class, 'getPenjualDetail']);
         
         Route::middleware('penjual.approved')->group(function () {
             Route::post('/penjual/menus', [MenuController::class, 'store']);
