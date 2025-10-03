@@ -13,10 +13,16 @@ return new class extends Migration
             $table->enum('delivery_option', ['pickup', 'delivery'])->default('pickup')->after('status');
             $table->text('delivery_address')->nullable()->after('delivery_option');
             $table->timestamp('estimated_time')->nullable()->after('notes');
-            
-            // Update enum status untuk include 'on_delivery'
-            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'processing', 'ready', 'on_delivery', 'completed', 'cancelled') DEFAULT 'pending'");
         });
+        
+        // For SQLite, we need to recreate the table to modify the enum
+        if (DB::getDriverName() === 'sqlite') {
+            // SQLite doesn't support MODIFY COLUMN, so we'll skip the status modification
+            // The status column will remain as string and we'll handle validation in the application
+        } else {
+            // For MySQL/PostgreSQL, we can modify the column
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'processing', 'ready', 'on_delivery', 'completed', 'cancelled') DEFAULT 'pending'");
+        }
     }
 
     public function down(): void
