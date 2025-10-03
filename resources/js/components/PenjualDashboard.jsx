@@ -34,8 +34,7 @@ const PenjualDashboard = ({ user, API_BASE }) => {
     };
     
     testAuth();
-    
-    if (user.is_approved) {
+    if (user?.is_approved) {
       loadPenjualMenus();
       loadPenjualOrders();
     }
@@ -89,7 +88,7 @@ const loadPenjualOrders = async () => {
     const token = localStorage.getItem('token');
     console.log('Loading penjual orders...');
     
-    const response = await fetch(`${API_BASE}/penjual/orders`, { // HAPUS /api/
+    const response = await fetch(`${API_BASE}/penjual/orders`, {
       headers: { 
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
@@ -121,7 +120,7 @@ const loadPenjualOrders = async () => {
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+      const response = await fetch(`${API_BASE}/penjual/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
