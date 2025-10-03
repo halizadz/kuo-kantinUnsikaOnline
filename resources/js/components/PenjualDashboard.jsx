@@ -121,7 +121,7 @@ const loadPenjualOrders = async () => {
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/orders/${orderId}/status`, {
+      const response = await fetch(`${API_BASE}/penjual/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
