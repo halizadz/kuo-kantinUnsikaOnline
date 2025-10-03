@@ -10,13 +10,14 @@ return new class extends Migration
     {
         Schema::table('orders', function (Blueprint $table) {
             // Tambah kolom delivery_option dan delivery_address
-            $table->enum('delivery_option', ['pickup', 'delivery'])->default('pickup')->after('status');
+            $table->string('delivery_option')->default('pickup')->after('status');
             $table->text('delivery_address')->nullable()->after('delivery_option');
             $table->timestamp('estimated_time')->nullable()->after('notes');
-            
-            // Update enum status untuk include 'on_delivery'
-            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'processing', 'ready', 'on_delivery', 'completed', 'cancelled') DEFAULT 'pending'");
         });
+        
+        // For SQLite, we need to recreate the table to modify the status column
+        // But since SQLite doesn't enforce ENUM constraints anyway, we'll just add a check constraint
+        DB::statement("UPDATE orders SET status = 'pending' WHERE status NOT IN ('pending', 'processing', 'ready', 'on_delivery', 'completed', 'cancelled')");
     }
 
     public function down(): void

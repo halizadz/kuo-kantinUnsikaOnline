@@ -23,7 +23,6 @@ Route::get('/menus', [MenuController::class, 'index']);
 Route::get('/menus/{id}', [MenuController::class, 'show']);
 
 Route::get('/penjual', [PenjualController::class, 'getAllPenjual']);
-Route::get('/penjual/{id}', [PenjualController::class, 'getPenjualDetail']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -64,3 +63,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/stats', [AdminController::class, 'getStats']);
     });
 });
+
+// Put parameterized routes at the end to avoid conflicts
+Route::get('/penjual/{id}', [PenjualController::class, 'getPenjualDetail']);
