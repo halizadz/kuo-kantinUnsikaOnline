@@ -90,4 +90,14 @@ public function isAdmin()
     {
         return $this->hasMany(Menu::class, 'penjual_id');
     }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'penjual_id');
+    }
+
+    public function userOrders()
+    {
+        return $this->hasMany(Order::class, 'user_id');
+    }
 }
