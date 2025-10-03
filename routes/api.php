@@ -23,7 +23,7 @@ Route::get('/menus', [MenuController::class, 'index']);
 Route::get('/menus/{id}', [MenuController::class, 'show']);
 
 Route::get('/penjual', [PenjualController::class, 'getAllPenjual']);
-Route::get('/penjual/{id}', [PenjualController::class, 'getPenjualDetail']);
+Route::get('/penjual/{id}', [PenjualController::class, 'getPenjualDetail'])->where('id', '[0-9]+');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   ShoppingCart, 
@@ -8,7 +8,10 @@ import {
   Settings,
   LogOut,
   Home,
-  History // ✅ Tambahkan import History
+  History,
+  Menu,
+  ChevronDown,
+  Bell
 } from 'lucide-react';
 
 const Header = ({ 
@@ -19,59 +22,90 @@ const Header = ({
   logoutUser, 
   cart, 
   setIsCartOpen,
-  activePage, // ✅ Tambahkan
-  setActivePage // ✅ Tambahkan
+  activePage,
+  setActivePage 
 }) => {
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const getInitials = (name) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const getRoleBadge = (role, isApproved) => {
+    const roleConfig = {
+      mahasiswa: { label: 'Mahasiswa', color: 'mahasiswa' },
+      penjual: { label: isApproved ? 'Penjual' : 'Penjual (Pending)', color: 'penjual' },
+      admin: { label: 'Admin', color: 'admin' }
+    };
+    
+    const config = roleConfig[role] || { label: role, color: 'default' };
+    return (
+      <span className={`user-role ${config.color}`}>
+        {config.label}
+      </span>
+    );
+  };
+
   return (
-    <header className="header">
+    <header className={`header ${scrolled ? 'scrolled' : ''}`}>
       <div className="container">
         <div className="header-content">
-          {/* Logo Section */}
-          <div className="logo">
+          {/* Logo */}
+          <a href="#" className="logo" onClick={(e) => { e.preventDefault(); setActivePage('home'); }}>
             <div className="logo-icon">🍽️</div>
-            <div>
-              <h1>KantinKampus</h1>
-              <p>Food Delivery</p>
+            <div className="logo-text">
+              <h1>KUO</h1>
+              <p>Kantin Unsika Online</p>
             </div>
-          </div>
+          </a>
 
-          {/* Navigation untuk Mahasiswa */}
+          {/* Navigation - Show for mahasiswa and guests */}
           {(!user || user.role === 'mahasiswa') && (
-            <div className="header-center">
+            <div className="nav-center">
               <div className="nav-buttons">
                 <button 
                   className={`nav-button ${activePage === 'home' ? 'active' : ''}`}
                   onClick={() => setActivePage('home')}
                 >
                   <Home size={20} />
-                  Beranda
+                  <span>Beranda</span>
                 </button>
                 <button 
                   className={`nav-button ${activePage === 'order-history' ? 'active' : ''}`}
                   onClick={() => setActivePage('order-history')}
                 >
                   <History size={20} />
-                  Riwayat Pesanan
+                  <span>Riwayat</span>
                 </button>
               </div>
               
-              {/* Search bar */}
-              <div className="search-bar">
-                <Search size={20} />
+              {/* <div className="search-bar">
+                <Search className="search-icon" size={20} />
                 <input
                   type="text"
                   placeholder="Cari makanan atau minuman..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              </div>
+              </div> */}
             </div>
           )}
 
-          {/* Search bar untuk guest (tanpa user) */}
+          {/* Search bar for guests */}
           {!user && (
             <div className="search-bar">
-              <Search size={20} />
+              <Search className="search-icon" size={20} />
               <input
                 type="text"
                 placeholder="Cari makanan atau minuman..."
@@ -81,31 +115,24 @@ const Header = ({
             </div>
           )}
 
+          {/* Mobile Menu Button */}
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+          >
+            <Menu size={24} />
+          </button>
+
+          {/* Header Actions */}
           <div className="header-actions">
             {user ? (
               <div className="user-section">
-                <div className="user-info">
-                  <div className="user-avatar">
-                    {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    <div className="user-status"></div>
-                  </div>
-                  
-                  <div className="user-details">
-                    <div className="user-name">{user.name}</div>
-                    <div className={`user-role ${user.role}`}>
-                      {user.role === 'mahasiswa' ? 'Mahasiswa' : 
-                       user.role === 'penjual' ? 'Penjual' : 'Admin'}
-                      {user.role === 'penjual' && !user.is_approved && ' (Pending)'}
-                    </div>
-                  </div>
-                </div>
-                
-                <button className="btn-logout-header" onClick={logoutUser}>
-                  <LogOut size={16} />
-                  <span>Keluar</span>
+                {/* Notifications */}
+                <button className="btn-ghost">
+                  <Bell size={20} />
                 </button>
 
-                {/* Cart hanya untuk mahasiswa */}
+                {/* Cart - Only for mahasiswa */}
                 {user.role === 'mahasiswa' && (
                   <button 
                     className="cart-btn"
@@ -113,9 +140,54 @@ const Header = ({
                   >
                     <ShoppingCart size={20} />
                     {cart.length > 0 && (
-                      <span className="cart-badge">{cart.length}</span>
+                      <span className="cart-badge">
+                        {cart.reduce((sum, item) => sum + (item.quantity || 1), 0)}
+                      </span>
                     )}
                   </button>
+                )}
+
+                {/* User Info */}
+                <div 
+                  className="user-info"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                >
+                  <div className="user-avatar">
+                    {getInitials(user.name)}
+                    <div className="user-status"></div>
+                  </div>
+                  
+                  <div className="user-details">
+                    <div className="user-name">{user.name}</div>
+                    {getRoleBadge(user.role, user.is_approved)}
+                  </div>
+                  
+                  <ChevronDown 
+                    size={16} 
+                    className={`dropdown-arrow ${showUserMenu ? 'rotate' : ''}`} 
+                  />
+                </div>
+
+                {/* User Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="user-menu">
+                    <div className="user-menu-item">
+                      <User size={18} />
+                      <span>Profil Saya</span>
+                    </div>
+                    <div className="user-menu-item">
+                      <Settings size={18} />
+                      <span>Pengaturan</span>
+                    </div>
+                    <div className="user-menu-divider"></div>
+                    <button 
+                      className="user-menu-logout"
+                      onClick={logoutUser}
+                    >
+                      <LogOut size={18} />
+                      <span>Keluar</span>
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
@@ -137,7 +209,41 @@ const Header = ({
             )}
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {showMobileMenu && (!user || user.role === 'mahasiswa') && (
+          <div className="mobile-nav">
+            <button 
+              className={`mobile-nav-item ${activePage === 'home' ? 'active' : ''}`}
+              onClick={() => {
+                setActivePage('home');
+                setShowMobileMenu(false);
+              }}
+            >
+              <Home size={20} />
+              <span>Beranda</span>
+            </button>
+            <button 
+              className={`mobile-nav-item ${activePage === 'order-history' ? 'active' : ''}`}
+              onClick={() => {
+                setActivePage('order-history');
+                setShowMobileMenu(false);
+              }}
+            >
+              <History size={20} />
+              <span>Riwayat Pesanan</span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Overlay for user menu */}
+      {showUserMenu && (
+        <div 
+          className="menu-overlay" 
+          onClick={() => setShowUserMenu(false)}
+        ></div>
+      )}
     </header>
   );
 };

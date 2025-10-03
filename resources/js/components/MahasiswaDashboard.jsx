@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Store, MapPin, Star, Clock, ChevronRight, Plus, Search, ArrowLeft, ShoppingCart, Heart, Truck, Shield } from 'lucide-react';
+import { 
+  Store, MapPin, Star, Clock, ChevronRight, Plus, 
+  Search, ArrowLeft, ShoppingCart, Heart, Truck, 
+  Shield, Zap, Users, Sparkles, Filter, X, Crown,
+  Menu
+} from 'lucide-react';
 
 const MahasiswaDashboard = ({ user, cart, setCart, API_BASE }) => {
   const [kantinList, setKantinList] = useState([]);
@@ -7,28 +12,34 @@ const MahasiswaDashboard = ({ user, cart, setCart, API_BASE }) => {
   const [kantinMenus, setKantinMenus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [featuredKantin, setFeaturedKantin] = useState([]);
+  const [showAllKantin, setShowAllKantin] = useState(false);
+  const [menuSearchTerm, setMenuSearchTerm] = useState('');
+  const [menuFilter, setMenuFilter] = useState('all');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     loadKantinList();
   }, []);
 
-const loadKantinList = async () => {
-  try {
-    setLoading(true);
-    // GANTI INI - dari endpoint admin ke public
-    const response = await fetch(`${API_BASE}/penjual`);
-    const data = await response.json();
-    
-    if (data.success) {
-      const approvedPenjual = data.data.data; // Sudah difilter approved di backend
-      setKantinList(approvedPenjual);
+  const loadKantinList = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/penjual`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const approvedPenjual = data.data.data;
+        setKantinList(approvedPenjual);
+        // Set featured kantin (first 3 for example)
+        setFeaturedKantin(approvedPenjual.slice(0, 3));
+      }
+    } catch (error) {
+      console.error('Error loading kantin:', error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error loading kantin:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const loadKantinMenus = async (penjualId) => {
     try {
@@ -68,7 +79,11 @@ const loadKantinList = async () => {
       return [...prev, { ...menu, quantity: 1 }];
     });
     
-    alert(`${menu.name} ditambahkan ke keranjang!`);
+    // Show success feedback
+    const event = new CustomEvent('showToast', {
+      detail: { message: `${menu.name} ditambahkan ke keranjang!`, type: 'success' }
+    });
+    window.dispatchEvent(event);
   };
 
   const filteredKantin = kantinList.filter(kantin => 
@@ -76,18 +91,47 @@ const loadKantinList = async () => {
     (kantin.location && kantin.location.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Helper untuk format image URL
+  const filteredMenus = kantinMenus.filter(menu => {
+    const matchesSearch = menu.name.toLowerCase().includes(menuSearchTerm.toLowerCase()) ||
+                         menu.description.toLowerCase().includes(menuSearchTerm.toLowerCase());
+    
+    const matchesFilter = 
+      menuFilter === 'all' ? true :
+      menuFilter === 'available' ? menu.is_available :
+      menuFilter === 'popular' ? menu.is_popular : true;
+    
+    return matchesSearch && matchesFilter;
+  });
+
   const getImageUrl = (imagePath) => {
     if (!imagePath) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop';
     if (imagePath.startsWith('http')) return imagePath;
     return `${API_BASE.replace('/api', '')}/storage/${imagePath}`;
   };
 
-  // Tampilan detail kantin dengan menu (untuk pemesanan)
+  // Tampilan detail kantin
   if (selectedKantin) {
     return (
       <div className="kantin-detail-page">
-        <div className="container">
+        {/* Mobile Header */}
+        <div className="mobile-dashboard-header">
+          
+          
+          {mobileMenuOpen && (
+            <div className="mobile-tabs-menu">
+              <button className="mobile-tab" onClick={() => setSelectedKantin(null)}>
+                <ArrowLeft size={18} />
+                Kembali ke Kantin
+              </button>
+              <button className="mobile-tab">
+                <ShoppingCart size={18} />
+                Keranjang ({cart.reduce((sum, item) => sum + (item.quantity || 1), 0)})
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="container desktop-only">
           <button 
             onClick={() => setSelectedKantin(null)}
             className="back-button"
@@ -95,209 +139,335 @@ const loadKantinList = async () => {
             <ArrowLeft size={20} />
             Kembali ke Daftar Kantin
           </button>
+        </div>
 
-          <div className="kantin-hero">
-            <div className="kantin-hero-content">
-              <div className="kantin-icon">
-                <Store size={48} />
-              </div>
-              <div className="kantin-info">
-                <h1>{selectedKantin.kantin_name}</h1>
-                <p className="kantin-location">
-                  <MapPin size={18} />
-                  {selectedKantin.location || 'Lokasi tidak tersedia'}
-                </p>
-                <p className="kantin-owner">
-                  Pemilik: {selectedKantin.name}
-                </p>
+        <div className="kantin-hero">
+          <div className="kantin-hero-content">
+            <div className="kantin-image">
+              <img 
+                src={getImageUrl(selectedKantin.kantin_image)} 
+                alt={selectedKantin.kantin_name}
+                onError={(e) => {
+                  e.target.src = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop';
+                }}
+              />
+            </div>
+            <div className="kantin-info">
+              <h1 className="desktop-only">{selectedKantin.kantin_name}</h1>
+              <p className="kantin-location">
+                <MapPin size={18} />
+                {selectedKantin.location || 'Lokasi tidak tersedia'}
+              </p>
+              <p className="kantin-owner">
+                <Users size={16} />
+                Pemilik: {selectedKantin.name}
+              </p>
+              <div className="kantin-stats">
+                <div className="stat">
+                  <Star size={16} fill="currentColor" />
+                  <span>4.8 • 150+ rating</span>
+                </div>
+                <div className="stat">
+                  <Clock size={16} />
+                  <span>15-20 menit</span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="menu-header">
+        <div className="menu-controls">
+          <div className="menu-header desktop-only">
             <h2>Menu Tersedia</h2>
-            {cart.length > 0 && (
-              <div className="cart-indicator">
-                <ShoppingCart size={20} />
-                {cart.reduce((sum, item) => sum + (item.quantity || 1), 0)} item
+            <div className="menu-filters">
+              <div className="search-bar menu-search">
+                <Search className="search-icon" size={20} />
+                <input
+                  type="text"
+                  placeholder="Cari menu..."
+                  value={menuSearchTerm}
+                  onChange={(e) => setMenuSearchTerm(e.target.value)}
+                />
               </div>
-            )}
+              <div className="filter-buttons">
+                <button 
+                  className={`filter-btn ${menuFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setMenuFilter('all')}
+                >
+                  Semua
+                </button>
+                <button 
+                  className={`filter-btn ${menuFilter === 'available' ? 'active' : ''}`}
+                  onClick={() => setMenuFilter('available')}
+                >
+                  Tersedia
+                </button>
+                <button 
+                  className={`filter-btn ${menuFilter === 'popular' ? 'active' : ''}`}
+                  onClick={() => setMenuFilter('popular')}
+                >
+                  <Sparkles size={14} />
+                  Populer
+                </button>
+              </div>
+            </div>
           </div>
           
-          {kantinMenus.length === 0 ? (
-            <div className="empty-state">
-              <Store size={64} />
-              <p>Belum ada menu tersedia di kantin ini</p>
-            </div>
-          ) : (
-            <div className="menu-grid">
-              {kantinMenus.map(menu => (
-                <div key={menu.id} className="menu-card">
-                  <div className="menu-card-header">
-                    <img 
-                      src={getImageUrl(menu.image)} 
-                      alt={menu.name}
-                    />
-                    {menu.is_popular && <div className="popular-badge">🔥 Populer</div>}
-                    {!menu.is_available && (
-                      <div className="unavailable-overlay">
-                        Habis
-                      </div>
-                    )}
-                    <button className="favorite-btn">
-                      <Heart size={18} />
-                    </button>
-                  </div>
-                  
-                  <div className="menu-card-content">
-                    <h3>{menu.name}</h3>
-                    <p>{menu.description}</p>
-                    
-                    <div className="menu-meta">
-                      <div className="rating">
-                        <Star size={16} fill="currentColor" />
-                        <span>{menu.rating || '4.5'}</span>
-                      </div>
-                      <div className="prep-time">
-                        <Clock size={16} />
-                        <span>{menu.prep_time || 15} menit</span>
-                      </div>
-                    </div>
-                    
-                    <div className="menu-card-footer">
-                      <span className="price">
-                        Rp {Number(menu.price).toLocaleString('id-ID')}
-                      </span>
-                      <button 
-                        className={`add-to-cart-btn ${!menu.is_available ? 'disabled' : ''}`}
-                        onClick={() => addToCart(menu)}
-                        disabled={!menu.is_available}
-                      >
-                        <Plus size={18} />
-                        Pesan
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Mobile Menu Header */}
+          
+          
+          {cart.length > 0 && (
+            <div className="cart-indicator">
+              <ShoppingCart size={20} />
+              <span className="cart-count">
+                {cart.reduce((sum, item) => sum + (item.quantity || 1), 0)}
+              </span>
             </div>
           )}
         </div>
-      </div>
-    );
-  }
-
-  // Tampilan daftar kantin (halaman utama)
-  return (
-    <div className="kantin-list-page">
-            {/* Hero Section */}
-            <section className="hero">
-              <div className="container">
-                <div className="hero-content">
-                  <div className="hero-text">
-                    <h2>Nikmati Makanan Kantin Kampus dengan Cara Modern</h2>
-                    <p>Pesan makanan favoritmu tanpa antri. Cepat, praktis, dan pastinya enak!</p>
-                    <div className="hero-stats">
-                      <div className="stat">
-                        <strong>500+</strong>
-                        <span>Menu Variatif</span>
-                      </div>
-                      <div className="stat">
-                        <strong>4.9</strong>
-                        <span>Rating</span>
-                      </div>
-                      <div className="stat">
-                        <strong>15min</strong>
-                        <span>Rata-rata Pengiriman</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="hero-image">
-                    <img 
-                      src="https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=600&h=400&fit=crop" 
-                      alt="Delicious Food" 
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-      
-            {/* Features */}
-            <section className="features">
-              <div className="container">
-                <div className="features-grid">
-                  <div className="feature-card">
-                    <Truck size={48} />
-                    <h3>Gratis Ongkir</h3>
-                    <p>Gratis pengiriman untuk seluruh kampus</p>
-                  </div>
-                  <div className="feature-card">
-                    <Clock size={48} />
-                    <h3>15 Menit</h3>
-                    <p>Pesanan sampai dalam 15 menit</p>
-                  </div>
-                  <div className="feature-card">
-                    <Shield size={48} />
-                    <h3>Terjamin</h3>
-                    <p>Kualitas makanan terjamin</p>
-                  </div>
-                  <div className="feature-card">
-                    <Star size={48} />
-                    <h3>4.9 Rating</h3>
-                    <p>Dari 2000+ ulasan</p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-      {/* Kantin List */}
-      <div className="container">
-        {loading ? (
-          <div className="loading">
-            <p>Memuat daftar kantin...</p>
-          </div>
-        ) : filteredKantin.length === 0 ? (
+        
+        {filteredMenus.length === 0 ? (
           <div className="empty-state">
             <Store size={64} />
-            <p>{searchTerm ? 'Kantin tidak ditemukan' : 'Belum ada kantin yang terdaftar'}</p>
+            <h3>
+              {menuSearchTerm || menuFilter !== 'all' 
+                ? 'Menu tidak ditemukan' 
+                : 'Belum ada menu tersedia'
+              }
+            </h3>
+            <p>
+              {menuSearchTerm 
+                ? 'Coba gunakan kata kunci lain' 
+                : 'Kantin ini sedang mempersiapkan menu yang lezat untuk Anda'
+              }
+            </p>
           </div>
         ) : (
-          <div className="kantin-grid">
-            {filteredKantin.map(kantin => (
-              <div 
-                key={kantin.id}
-                className="kantin-card"
-                onClick={() => selectKantin(kantin)}
-              >
-                <div className="kantin-card-header">
-                  <div className="kantin-icon-small">
-                    <Store size={36} />
+          <div className="menu-grid">
+            {filteredMenus.map(menu => (
+              <div key={menu.id} className="menu-card">
+                <div className="menu-card-header">
+                  <img 
+                    src={getImageUrl(menu.image)} 
+                    alt={menu.name}
+                  />
+                  <div className="menu-badges">
+                    {menu.is_popular && (
+                      <div className="popular-badge">
+                        <Crown size={12} />
+                        Populer
+                      </div>
+                    )}
+                    {!menu.is_available && (
+                      <div className="unavailable-overlay">
+                        <span>Habis</span>
+                      </div>
+                    )}
                   </div>
-                  <h3>{kantin.kantin_name}</h3>
+                  <button className="favorite-btn">
+                    <Heart size={18} />
+                  </button>
                 </div>
-
-                <div className="kantin-card-content">
-                  <div className="kantin-location-info">
-                    <MapPin size={18} />
-                    <span>{kantin.location || 'Lokasi tidak tersedia'}</span>
+                
+                <div className="menu-card-content">
+                  <h3>{menu.name}</h3>
+                  <p className="menu-description">{menu.description || 'Menu lezat dari kantin kami'}</p>
+                  
+                  <div className="menu-meta">
+                    <div className="rating">
+                      <Star size={16} fill="currentColor" />
+                      <span>{menu.rating || '4.5'}</span>
+                    </div>
+                    <div className="prep-time">
+                      <Clock size={16} />
+                      <span>{menu.prep_time || 15} menit</span>
+                    </div>
                   </div>
-
-                  <div className="kantin-card-footer">
-                    <div className="kantin-owner-info">
-                      <p className="owner-label">Pemilik</p>
-                      <p className="owner-name">{kantin.name}</p>
-                    </div>
-                    <div className="view-menu-btn">
-                      Lihat Menu
-                      <ChevronRight size={18} />
-                    </div>
+                  
+                  <div className="menu-card-footer">
+                    <span className="price">
+                      Rp {Number(menu.price).toLocaleString('id-ID')}
+                    </span>
+                    <button 
+                      className={`add-to-cart-btn ${!menu.is_available ? 'disabled' : ''}`}
+                      onClick={() => addToCart(menu)}
+                      disabled={!menu.is_available}
+                    >
+                      <Plus size={18} />
+                      {!menu.is_available ? 'Habis' : 'Pesan'}
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        {/* Mobile FAB for Cart */}
+        {cart.length > 0 && (
+          <div className="mobile-fab">
+            <button className="fab-btn">
+              <ShoppingCart size={24} />
+              <span className="cart-count-bubble">
+                {cart.reduce((sum, item) => sum + (item.quantity || 1), 0)}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
+    );
+  }
+
+  // Tampilan utama - Daftar Kantin dengan Nomor
+  return (
+    <div className="mahasiswa-dashboard">
+
+      {/* Hero Section */}
+      <section className="hero desktop-only">
+        <div className="container">
+          <div className="hero-content">
+            <div className="hero-text">
+              <h1>Nikmati Makanan Kantin Kampus dengan Cara Modern</h1>
+              <p>Pesan makanan favoritmu tanpa antri. Cepat, praktis, dan pastinya enak!</p>
+              
+              <div className="hero-stats">
+                <div className="stat">
+                  <strong>{kantinList.length}+</strong>
+                  <span>Kantin Aktif</span>
+                </div>
+                <div className="stat">
+                  <strong>500+</strong>
+                  <span>Menu Variatif</span>
+                </div>
+                <div className="stat">
+                  <strong>15min</strong>
+                  <span>Rata-rata Pengiriman</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="hero-image">
+              <img 
+                src="/kuo.jpg" 
+                alt="Delicious Food" 
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* All Kantin Section dengan Nomor */}
+      <section className="all-kantin">
+        <div className="container">
+          <div className="section-header desktop-only">
+            <div className="section-title-wrapper">
+              <div className="title-icon">
+                <Store size={24} />
+              </div>
+              <div>
+                <h2 className="gradient-text">Daftar Kantin Kampus</h2>
+                <p className="text-secondary">Temukan kantin favorit Anda di kampus</p>
+              </div>
+            </div>
+            
+            <div className="search-bar">
+              <Search className="search-icon" size={20} />
+              <input
+                type="text"
+                placeholder="Cari kantin atau lokasi..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+
+
+          {loading ? (
+            <div className="loading-section">
+              <div className="loading-spinner"></div>
+              <p>Memuat daftar kantin...</p>
+            </div>
+          ) : filteredKantin.length === 0 ? (
+            <div className="empty-state">
+              <Store size={64} />
+              <h3>{searchTerm ? 'Kantin tidak ditemukan' : 'Belum ada kantin yang terdaftar'}</h3>
+              <p>
+                {searchTerm 
+                  ? 'Coba gunakan kata kunci lain' 
+                  : 'Silakan coba lagi nanti'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="kantin-list-numbered">
+              {filteredKantin.map((kantin, index) => (
+                <div 
+                  key={kantin.id}
+                  className="kantin-card-numbered"
+                  onClick={() => selectKantin(kantin)}
+                >
+                  <div className="kantin-number">
+                    #{index + 1}
+                  </div>
+                  
+                  <div className="kantin-image">
+                    <img 
+                      src={getImageUrl(kantin.kantin_image)} 
+                      alt={kantin.kantin_name}
+                      onError={(e) => {
+                        e.target.src = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&h=150&fit=crop';
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="kantin-content">
+                    <div className="kantin-header">
+                      <h3>{kantin.kantin_name}</h3>
+                      <div className="kantin-status">
+                        <div className="status-dot online"></div>
+                        <span>Buka</span>
+                      </div>
+                    </div>
+                    
+                    <div className="kantin-info">
+                      <div className="info-item">
+                        <MapPin size={14} />
+                        <span>{kantin.location || 'Lokasi tidak tersedia'}</span>
+                      </div>
+                      <div className="info-item">
+                        <Users size={14} />
+                        <span>Pemilik: {kantin.name}</span>
+                      </div>
+                    </div>
+
+                    <div className="kantin-stats">
+                      <div className="stat">
+                        <Star size={14} fill="currentColor" />
+                        <span>4.5</span>
+                      </div>
+                      <div className="stat">
+                        <Clock size={14} />
+                        <span>15m</span>
+                      </div>
+                      <div className="stat">
+                        <Truck size={14} />
+                        <span>Gratis</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="kantin-arrow">
+                    <ChevronRight size={20} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+  
     </div>
   );
 };

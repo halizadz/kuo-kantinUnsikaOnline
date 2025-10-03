@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { 
-  Eye, EyeOff, GraduationCap, Store, X, Facebook 
+  Eye, EyeOff, GraduationCap, Store, X, Facebook,
+  Mail, Lock, User as UserIcon, Phone, MapPin, Camera
 } from 'lucide-react';
 
 const AuthModal = ({ authModal, setAuthModal, setUser, API_BASE }) => {
   const [activeAuthTab, setActiveAuthTab] = useState(authModal === 'login' ? 'login' : 'register');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -44,85 +46,83 @@ const AuthModal = ({ authModal, setAuthModal, setUser, API_BASE }) => {
     }
   };
 
-const handleAuthSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (activeAuthTab === 'login') {
-    const result = await loginUser({
-      email: formData.email,
-      password: formData.password
-    });
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
     
-    if (result.success) {
-      localStorage.setItem('token', result.data.token);
-      localStorage.setItem('user', JSON.stringify(result.data.user));
-      setUser(result.data.user);
-      setAuthModal(null);
-      alert('Login berhasil!');
-    } else {
-      alert(result.message);
-    }
-  } else {
-    // Buat object data berdasarkan role
-    const dataToSend = new FormData();
-    dataToSend.append('name', formData.name);
-    dataToSend.append('email', formData.email);
-    dataToSend.append('phone', formData.phone);
-    dataToSend.append('password', formData.password);
-    dataToSend.append('password_confirmation', formData.password_confirmation);
-    dataToSend.append('role', formData.role);
-    };
-
-    // Tambahkan field sesuai role
-    if (formData.role === 'mahasiswa') {
-      dataToSend.nim = formData.nim;
-    } else if (formData.role === 'penjual') {
-     dataToSend.append('kantin_name', formData.kantin_name);
-      dataToSend.append('location', formData.location);
-      // Tambahkan file foto ke FormData jika ada
-      if (formData.kantin_photo) {
-        dataToSend.append('kantin_photo', formData.kantin_photo);
-    }
-
-    const result = await registerUser(dataToSend);
-    
-    if (result.success) {
-      if (formData.role === 'mahasiswa') {
+    if (activeAuthTab === 'login') {
+      const result = await loginUser({
+        email: formData.email,
+        password: formData.password
+      });
+      
+      if (result.success) {
         localStorage.setItem('token', result.data.token);
         localStorage.setItem('user', JSON.stringify(result.data.user));
         setUser(result.data.user);
         setAuthModal(null);
-        alert('Registrasi mahasiswa berhasil!');
       } else {
-        alert('Registrasi penjual berhasil! Menunggu approval admin.');
-        setAuthModal(null);
+        alert(result.message);
       }
     } else {
-      alert(result.errors ? Object.values(result.errors).join(', ') : result.message);
+      const dataToSend = new FormData();
+      dataToSend.append('name', formData.name);
+      dataToSend.append('email', formData.email);
+      dataToSend.append('phone', formData.phone);
+      dataToSend.append('password', formData.password);
+      dataToSend.append('password_confirmation', formData.password_confirmation);
+      dataToSend.append('role', formData.role);
+
+      if (formData.role === 'mahasiswa') {
+        dataToSend.append('nim', formData.nim);
+      } else if (formData.role === 'penjual') {
+        dataToSend.append('kantin_name', formData.kantin_name);
+        dataToSend.append('location', formData.location);
+        if (formData.kantin_photo) {
+          dataToSend.append('kantin_photo', formData.kantin_photo);
+        }
+      }
+
+      const result = await registerUser(dataToSend);
+      
+      if (result.success) {
+        if (formData.role === 'mahasiswa') {
+          localStorage.setItem('token', result.data.token);
+          localStorage.setItem('user', JSON.stringify(result.data.user));
+          setUser(result.data.user);
+          setAuthModal(null);
+          alert('Registrasi mahasiswa berhasil!');
+        } else {
+          alert('Registrasi penjual berhasil! Menunggu approval admin.');
+          setAuthModal(null);
+        }
+      } else {
+        alert(result.errors ? Object.values(result.errors).join(', ') : result.message);
+      }
     }
-  }
-};
+    setIsLoading(false);
+  };
 
-const handleInputChange = (e) => {
-  const { name, value, type, checked } = e.target;
-  setFormData({
-    ...formData,
-    [name]: type === 'checkbox' || type === 'radio' ? (type === 'checkbox' ? checked : value) : value
-  });
-};
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
 
- const handleFileChange = (e) => {
-  setFormData({
-    ...formData,
-    kantin_photo: e.target.files[0]
-  });
-};
+  const handleFileChange = (e) => {
+    setFormData({
+      ...formData,
+      kantin_photo: e.target.files[0]
+    });
+  };
 
   const switchAuthTab = (tab) => {
     setActiveAuthTab(tab);
     setFormData({ 
       name: '', email: '', phone: '', password: '', password_confirmation: '',
-      role: 'mahasiswa', nim: '', kantin_name: '', location: ''
+      role: 'mahasiswa', nim: '', kantin_name: '', location: '', kantin_photo: null
     });
   };
 
@@ -136,6 +136,9 @@ const handleInputChange = (e) => {
           >
             <X size={20} />
           </button>
+          <div className="auth-logo">
+            <div className="logo-icon">🍽️</div>
+          </div>
           <h2>
             {activeAuthTab === 'login' ? 'Selamat Datang Kembali' : 'Daftar Akun Baru'}
           </h2>
@@ -163,7 +166,7 @@ const handleInputChange = (e) => {
             </button>
           </div>
 
-          <form onSubmit={handleAuthSubmit}>
+          <form onSubmit={handleAuthSubmit} className="auth-form">
             {activeAuthTab === 'register' && (
               <>
                 <div className="form-group">
@@ -178,8 +181,11 @@ const handleInputChange = (e) => {
                         onChange={handleInputChange}
                       />
                       <div className="role-content">
-                        <GraduationCap size={20} />
+                        <div className="role-icon">
+                          <GraduationCap size={24} />
+                        </div>
                         <span>Mahasiswa</span>
+                        <small>Pesan makanan dari kantin kampus</small>
                       </div>
                     </label>
                     <label className="role-option">
@@ -191,15 +197,21 @@ const handleInputChange = (e) => {
                         onChange={handleInputChange}
                       />
                       <div className="role-content">
-                        <Store size={20} />
+                        <div className="role-icon">
+                          <Store size={24} />
+                        </div>
                         <span>Penjual</span>
+                        <small>Kelola kantin dan menu makanan</small>
                       </div>
                     </label>
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Nama Lengkap</label>
+                  <label className="form-label">
+                    <UserIcon size={18} />
+                    Nama Lengkap
+                  </label>
                   <input
                     type="text"
                     name="name"
@@ -214,7 +226,10 @@ const handleInputChange = (e) => {
             )}
 
             <div className="form-group">
-              <label className="form-label">Email</label>
+              <label className="form-label">
+                <Mail size={18} />
+                Email
+              </label>
               <input
                 type="email"
                 name="email"
@@ -227,23 +242,29 @@ const handleInputChange = (e) => {
             </div>
 
             {activeAuthTab === 'register' && (
-  <div className="form-group">
-    <label className="form-label">Nomor Telepon</label>
-    <input
-      type="tel"
-      name="phone"
-      className="form-input"
-      placeholder="08xxxxxxxxxx"
-      value={formData.phone}
-      onChange={handleInputChange}
-      required
-    />
-  </div>
-)}
+              <div className="form-group">
+                <label className="form-label">
+                  <Phone size={18} />
+                  Nomor Telepon
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  className="form-input"
+                  placeholder="08xxxxxxxxxx"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            )}
 
             {activeAuthTab === 'register' && formData.role === 'mahasiswa' && (
               <div className="form-group">
-                <label className="form-label">NIM</label>
+                <label className="form-label">
+                  <GraduationCap size={18} />
+                  NIM
+                </label>
                 <input
                   type="text"
                   name="nim"
@@ -259,7 +280,10 @@ const handleInputChange = (e) => {
             {activeAuthTab === 'register' && formData.role === 'penjual' && (
               <>
                 <div className="form-group">
-                  <label className="form-label">Nama Kantin</label>
+                  <label className="form-label">
+                    <Store size={18} />
+                    Nama Kantin
+                  </label>
                   <input
                     type="text"
                     name="kantin_name"
@@ -271,7 +295,10 @@ const handleInputChange = (e) => {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Lokasi Kantin</label>
+                  <label className="form-label">
+                    <MapPin size={18} />
+                    Lokasi Kantin
+                  </label>
                   <input
                     type="text"
                     name="location"
@@ -283,20 +310,31 @@ const handleInputChange = (e) => {
                   />
                 </div>
                 <div className="form-group">
-      <label className="form-label">Foto Kantin</label>
-      <input
-        type="file"
-        name="kantin_photo"
-        className="form-input"
-        onChange={handleFileChange} // <-- Gunakan handler baru
-        accept="image/*"
-      />
-    </div>
+                  <label className="form-label">
+                    <Camera size={18} />
+                    Foto Kantin
+                  </label>
+                  <div className="file-upload">
+                    <input
+                      type="file"
+                      name="kantin_photo"
+                      onChange={handleFileChange}
+                      accept="image/*"
+                    />
+                    <div className="file-upload-label">
+                      <Camera size={20} />
+                      <span>Unggah Foto Kantin</span>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 
             <div className="form-group">
-              <label className="form-label">Password</label>
+              <label className="form-label">
+                <Lock size={18} />
+                Password
+              </label>
               <div className="password-input">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -319,7 +357,10 @@ const handleInputChange = (e) => {
 
             {activeAuthTab === 'register' && (
               <div className="form-group">
-                <label className="form-label">Konfirmasi Password</label>
+                <label className="form-label">
+                  <Lock size={18} />
+                  Konfirmasi Password
+                </label>
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password_confirmation"
@@ -344,8 +385,16 @@ const handleInputChange = (e) => {
               </div>
             )}
 
-            <button type="submit" className="btn-auth">
-              {activeAuthTab === 'login' ? 'Masuk' : 'Daftar'}
+            <button 
+              type="submit" 
+              className={`btn-auth ${isLoading ? 'loading' : ''}`}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="spinner"></div>
+              ) : (
+                activeAuthTab === 'login' ? 'Masuk' : 'Daftar'
+              )}
             </button>
           </form>
 
