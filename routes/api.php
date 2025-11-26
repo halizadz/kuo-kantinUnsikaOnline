@@ -34,15 +34,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders', [OrderController::class, 'store']);
         Route::get('/user/orders', [OrderController::class, 'userOrders']);
         Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::post('/orders/{order}/rating', [OrderController::class, 'submitRating']); // TAMBAHAN: Route rating
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancelOrder']); // TAMBAHAN: Route cancel
+        Route::post('/orders/{order}/confirm-pickup', [OrderController::class, 'confirmPickup']); // TAMBAHAN: Route confirm pickup
     });
 
-    // PENJUAL - PERHATIKAN: TIDAK ADA auth:sanctum LAGI KARENA SUDAH DI PARENT
+    // PENJUAL
     Route::middleware('penjual')->group(function () {
         Route::get('/penjual/profile', [PenjualController::class, 'profile']);
         Route::put('/penjual/profile', [PenjualController::class, 'updateProfile']);
         Route::get('/penjual/stats', [PenjualController::class, 'getPenjualStats']);
         Route::get('/penjual/menus', [MenuController::class, 'penjualMenus']);
         Route::get('/penjual/orders', [OrderController::class, 'penjualOrders']);
+        Route::get('/penjual/ratings', [PenjualController::class, 'getRatings']); // TAMBAHAN: Route ratings penjual
         
         Route::middleware('penjual.approved')->group(function () {
             Route::post('/penjual/menus', [MenuController::class, 'store']);
@@ -62,5 +66,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/penjual/{id}/approve', [AdminController::class, 'approvePenjual']);
         Route::delete('/admin/penjual/{id}/reject', [AdminController::class, 'rejectPenjual']);
         Route::get('/admin/stats', [AdminController::class, 'getStats']);
+        Route::get('/admin/ratings', [AdminController::class, 'getAllRatings']); // TAMBAHAN: Route ratings admin
     });
 });

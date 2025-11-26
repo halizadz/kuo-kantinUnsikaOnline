@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Menu;
+use App\Models\Rating; // TAMBAHAN: Import model Rating
 
 class OrderController extends Controller
 {
@@ -125,24 +126,12 @@ class OrderController extends Controller
 
     public function penjualOrders(Request $request)
     {
-        // logger('=== penjualOrders METHOD CALLED ===', [
-        //     'user_id' => $request->user()->id,
-        //     'user_name' => $request->user()->name,
-        //     'user_role' => $request->user()->role,
-        //     'is_approved' => $request->user()->is_approved
-        // ]);
-
         $penjual = $request->user();
 
         $orders = Order::where('penjual_id', $penjual->id)
                         ->with(['user:id,name,phone', 'orderItems.menu:id,name,image'])
                         ->latest()
                         ->paginate(10);
-
-        // logger('Orders loaded for penjual', [
-        //     'count' => $orders->count(),
-        //     'total' => $orders->total()
-        // ]);
 
         return response()->json([
             'success' => true,
@@ -213,6 +202,145 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'data' => $order
+        ]);
+    }
+
+    // TAMBAHAN: Method untuk submit rating
+    public function submitRating(Order $order, Request $request)
+    {
+        $request->validate([
+            'rating' => 'required|numeric|min:1|max:5',
+            'review' => 'nullable|string|max:1000'
+        ]);
+
+        // Check if order belongs to user
+        if ($order->user_id !== auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Check if order is completed
+        if ($order->status !== 'completed') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya pesanan yang sudah selesai yang bisa diberi rating'
+            ], 400);
+        }
+
+        // Check if already rated
+        if ($order->is_rated) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan ini sudah diberi rating'
+            ], 400);
+        }
+
+        DB::transaction(function () use ($order, $request) {
+            // Create rating for each menu item
+            foreach ($order->orderItems as $item) {
+                Rating::create([
+                    'order_id' => $order->id,
+                    'user_id' => auth()->id(),
+                    'penjual_id' => $order->penjual_id,
+                    'menu_id' => $item->menu_id,
+                    'rating' => $request->rating,
+                    'review' => $request->review
+                ]);
+
+                // Update order item as rated
+                $item->update(['is_rated' => true]);
+            }
+
+            // Update order as rated
+            $order->update([
+                'is_rated' => true,
+                'average_rating' => $request->rating
+            ]);
+
+            // Update menu average rating
+            $this->updateMenuRating($order);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rating berhasil disimpan'
+        ]);
+    }
+
+    // TAMBAHAN: Method untuk update rating menu
+    private function updateMenuRating($order)
+    {
+        foreach ($order->orderItems as $item) {
+            $menu = $item->menu;
+            $ratings = Rating::where('menu_id', $menu->id)->get();
+            
+            $averageRating = $ratings->avg('rating');
+            $ratingCount = $ratings->count();
+            
+            $menu->update([
+                'rating' => $averageRating,
+                'rating_count' => $ratingCount
+            ]);
+        }
+    }
+
+    // TAMBAHAN: Method untuk cancel order
+    public function cancelOrder(Order $order)
+    {
+        $user = auth()->user();
+
+        // Check if order belongs to user
+        if ($order->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Check if order can be cancelled (only pending orders)
+        if ($order->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya pesanan dengan status pending yang bisa dibatalkan'
+            ], 400);
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pesanan berhasil dibatalkan'
+        ]);
+    }
+
+    // TAMBAHAN: Method untuk confirm pickup
+    public function confirmPickup(Order $order)
+    {
+        $user = auth()->user();
+
+        // Check if order belongs to user
+        if ($order->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Check if order is ready for pickup
+        if ($order->status !== 'ready' || $order->delivery_option !== 'pickup') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya pesanan dengan status ready dan pickup yang bisa dikonfirmasi'
+            ], 400);
+        }
+
+        $order->update(['status' => 'completed']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengambilan pesanan berhasil dikonfirmasi'
         ]);
     }
 }

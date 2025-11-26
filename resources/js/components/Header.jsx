@@ -102,18 +102,6 @@ const Header = ({
             </div>
           )}
 
-          {/* Search bar for guests */}
-          {!user && (
-            <div className="search-bar">
-              <Search className="search-icon" size={20} />
-              <input
-                type="text"
-                placeholder="Cari makanan atau minuman..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          )}
 
           {/* Mobile Menu Button */}
           <button 
@@ -171,7 +159,7 @@ const Header = ({
                 {/* User Dropdown Menu */}
                 {showUserMenu && (
                   <div className="user-menu">
-                    <div className="user-menu-item">
+                    {/* <div className="user-menu-item">
                       <User size={18} />
                       <span>Profil Saya</span>
                     </div>
@@ -179,7 +167,7 @@ const Header = ({
                       <Settings size={18} />
                       <span>Pengaturan</span>
                     </div>
-                    <div className="user-menu-divider"></div>
+                    <div className="user-menu-divider"></div> */}
                     <button 
                       className="user-menu-logout"
                       onClick={logoutUser}

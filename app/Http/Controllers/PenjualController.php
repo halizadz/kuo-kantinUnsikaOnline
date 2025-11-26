@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Rating;
 
 class PenjualController extends Controller
 {
@@ -112,4 +113,20 @@ class PenjualController extends Controller
             'data' => $penjual
         ]);
     }
+
+    // TAMBAHAN: Method untuk get ratings penjual
+public function getRatings(Request $request)
+{
+    $penjual = $request->user();
+
+    $ratings = Rating::with(['user:id,name', 'menu:id,name', 'order:id,order_number'])
+        ->where('penjual_id', $penjual->id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $ratings
+    ]);
+}
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Rating;
 
 class AdminController extends Controller
 {
@@ -126,4 +127,22 @@ class AdminController extends Controller
             'data' => $user
         ]);
     }
+
+    // TAMBAHAN: Method untuk get semua ratings
+public function getAllRatings(Request $request)
+{
+    $ratings = Rating::with([
+            'user:id,name', 
+            'menu:id,name', 
+            'penjual:id,kantin_name',
+            'order:id,order_number'
+        ])
+        ->orderBy('created_at', 'desc')
+        ->paginate(20);
+
+    return response()->json([
+        'success' => true,
+        'data' => $ratings
+    ]);
+}
 }

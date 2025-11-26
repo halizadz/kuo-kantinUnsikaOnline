@@ -104,4 +104,10 @@ class Order extends Model
     {
         return $this->isDelivery() ? 'Diantar' : 'Ambil Sendiri';
     }
+
+
+public function ratings()
+{
+    return $this->hasMany(Rating::class);
+}
 }
