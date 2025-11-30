@@ -20,9 +20,11 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Eye,
-    Star, // Icon bintang ditambahkan
+    Star,
+    Download, // Icon download ditambahkan
 } from "lucide-react";
 import MenuManagement from "./MenuManagement";
+import ExportModal from "./ExportModal";
 
 const PenjualDashboard = ({ user, API_BASE }) => {
     const [penjualMenus, setPenjualMenus] = useState([]);
@@ -40,6 +42,8 @@ const PenjualDashboard = ({ user, API_BASE }) => {
     });
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [ratings, setRatings] = useState([]);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exportType, setExportType] = useState(null);
 
     useEffect(() => {
         if (user.is_approved) {
@@ -258,6 +262,40 @@ const PenjualDashboard = ({ user, API_BASE }) => {
         );
     };
 
+    // Fungsi untuk membuka modal export
+    const openExportModal = (type) => {
+        setExportType(type);
+        setIsExportModalOpen(true);
+    };
+
+    // Fungsi untuk menutup modal export
+    const closeExportModal = () => {
+        setIsExportModalOpen(false);
+        setExportType(null);
+    };
+
+    // Stats cards dengan tombol export
+    const StatsCard = ({ title, value, icon, color, exportType }) => (
+        <div className="stats-card">
+            <div className="stats-content">
+                <div className="stats-info">
+                    <h3>{value}</h3>
+                    <p>{title}</p>
+                </div>
+                <div className={`stats-icon ${color}`}>{icon}</div>
+            </div>
+            {exportType && (
+                <button
+                    className="export-btn-sm"
+                    onClick={() => openExportModal(exportType)}
+                    title={`Export ${title}`}
+                >
+                    <Download size={14} />
+                </button>
+            )}
+        </div>
+    );
+
     if (user.role === "penjual" && !user.is_approved) {
         return (
             <div className="approval-pending">
@@ -402,16 +440,18 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                             <Star size={18} />
                             Ulasan ({ratings.length})
                         </button>
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => {
-                                setEditingMenu(null);
-                                setIsMenuModalOpen(true);
-                            }}
-                        >
-                            <Plus size={18} />
-                            Tambah Menu
-                        </button>
+                        <div className="dashboard-actions">
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    setEditingMenu(null);
+                                    setIsMenuModalOpen(true);
+                                }}
+                            >
+                                <Plus size={18} />
+                                Tambah Menu
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -431,6 +471,66 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                 {/* Overview Tab */}
                 {activeTab === "overview" && (
                     <div className="overview-content">
+                        {/* Quick Export Section */}
+                        <div className="quick-export-section">
+                            <div className="section-header">
+                                <h2>Quick Export</h2>
+                                <p>Export data kantin Anda dengan mudah</p>
+                            </div>
+                            <div className="export-buttons-grid">
+                                <button
+                                    className="export-option-btn"
+                                    onClick={() => openExportModal("menus")}
+                                >
+                                    <div className="export-option-icon">
+                                        <MenuIcon size={20} />
+                                    </div>
+                                    <div className="export-option-info">
+                                        <strong>Export Menu</strong>
+                                        <span>Data semua menu kantin</span>
+                                    </div>
+                                    <Download
+                                        size={16}
+                                        className="export-arrow"
+                                    />
+                                </button>
+
+                                <button
+                                    className="export-option-btn"
+                                    onClick={() => openExportModal("orders")}
+                                >
+                                    <div className="export-option-icon">
+                                        <Package size={20} />
+                                    </div>
+                                    <div className="export-option-info">
+                                        <strong>Export Pesanan</strong>
+                                        <span>Data pesanan pelanggan</span>
+                                    </div>
+                                    <Download
+                                        size={16}
+                                        className="export-arrow"
+                                    />
+                                </button>
+
+                                <button
+                                    className="export-option-btn"
+                                    onClick={() => openExportModal("ratings")}
+                                >
+                                    <div className="export-option-icon">
+                                        <Star size={20} />
+                                    </div>
+                                    <div className="export-option-info">
+                                        <strong>Export Rating</strong>
+                                        <span>Ulasan dan penilaian</span>
+                                    </div>
+                                    <Download
+                                        size={16}
+                                        className="export-arrow"
+                                    />
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Stats Grid - Enhanced */}
                         <div className="stats-grid enhanced">
                             <div className="stat-card glass">
@@ -452,6 +552,13 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                                         Menu aktif di kantin Anda
                                     </p>
                                 </div>
+                                <button
+                                    className="export-btn-sm"
+                                    onClick={() => openExportModal("menus")}
+                                    title="Export Menu"
+                                >
+                                    <Download size={14} />
+                                </button>
                             </div>
 
                             <div className="stat-card glass">
@@ -494,6 +601,13 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                                         Semua waktu
                                     </p>
                                 </div>
+                                <button
+                                    className="export-btn-sm"
+                                    onClick={() => openExportModal("orders")}
+                                    title="Export Pesanan"
+                                >
+                                    <Download size={14} />
+                                </button>
                             </div>
 
                             <div className="stat-card glass">
@@ -558,6 +672,13 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                                         Bulan ini
                                     </p>
                                 </div>
+                                <button
+                                    className="export-btn-sm"
+                                    onClick={() => openExportModal("ratings")}
+                                    title="Export Rating"
+                                >
+                                    <Download size={14} />
+                                </button>
                             </div>
                         </div>
 
@@ -604,13 +725,16 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                                     <p>Edit atau hapus menu yang ada</p>
                                 </button>
 
-                                <div className="quick-action-card">
+                                <button
+                                    className="quick-action-card"
+                                    onClick={() => openExportModal("menus")}
+                                >
                                     <div className="action-icon success">
-                                        <ChefHat size={24} />
+                                        <Download size={24} />
                                     </div>
-                                    <h4>Performance</h4>
-                                    <p>Analisis performa kantin Anda</p>
-                                </div>
+                                    <h4>Export Data</h4>
+                                    <p>Download data kantin dalam Excel</p>
+                                </button>
                             </div>
                         </div>
 
@@ -676,17 +800,28 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                                     Kelola menu makanan dan minuman kantin Anda
                                 </p>
                             </div>
-                            <div className="mobile-add-btn">
-                                <button
-                                    className="btn btn-primary btn-sm"
-                                    onClick={() => {
-                                        setEditingMenu(null);
-                                        setIsMenuModalOpen(true);
-                                    }}
-                                >
-                                    <Plus size={16} />
-                                    Tambah
-                                </button>
+                            <div className="header-actions">
+                                <div className="mobile-add-btn">
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => {
+                                            setEditingMenu(null);
+                                            setIsMenuModalOpen(true);
+                                        }}
+                                    >
+                                        <Plus size={16} />
+                                        Tambah
+                                    </button>
+                                </div>
+                                <div className="desktop-only">
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={() => openExportModal("menus")}
+                                    >
+                                        <Download size={16} />
+                                        Export Menu
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -800,6 +935,15 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                             <div className="header-content">
                                 <h2>Pesanan Masuk</h2>
                                 <p>Kelola pesanan dari pelanggan</p>
+                            </div>
+                            <div className="header-actions desktop-only">
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => openExportModal("orders")}
+                                >
+                                    <Download size={16} />
+                                    Export Pesanan
+                                </button>
                             </div>
                         </div>
 
@@ -1017,7 +1161,7 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                     </div>
                 )}
 
-                {/* Ratings Tab - DITAMBAHKAN */}
+                {/* Ratings Tab */}
                 {activeTab === "ratings" && (
                     <div className="dashboard-content">
                         <div className="content-header">
@@ -1025,19 +1169,34 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                                 <h2>Ulasan Pelanggan</h2>
                                 <p>Lihat feedback dari pelanggan Anda</p>
                             </div>
-                            <div className="rating-stats">
-                                <div className="average-rating">
-                                    <span className="rating-number">
-                                        {calculateAverageRating().toFixed(1)}
-                                    </span>
-                                    <div className="rating-stars-small">
-                                        {renderStarRating(
-                                            calculateAverageRating()
-                                        )}
+                            <div className="header-actions">
+                                <div className="rating-stats">
+                                    <div className="average-rating">
+                                        <span className="rating-number">
+                                            {calculateAverageRating().toFixed(
+                                                1
+                                            )}
+                                        </span>
+                                        <div className="rating-stars-small">
+                                            {renderStarRating(
+                                                calculateAverageRating()
+                                            )}
+                                        </div>
+                                        <span className="rating-count">
+                                            {ratings.length} ulasan
+                                        </span>
                                     </div>
-                                    <span className="rating-count">
-                                        {ratings.length} ulasan
-                                    </span>
+                                </div>
+                                <div className="desktop-only">
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={() =>
+                                            openExportModal("ratings")
+                                        }
+                                    >
+                                        <Download size={16} />
+                                        Export Rating
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1123,6 +1282,15 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                 />
             )}
 
+            {/* Export Modal */}
+            <ExportModal
+                isOpen={isExportModalOpen}
+                onClose={closeExportModal}
+                exportType={exportType}
+                user={user}
+                API_BASE={API_BASE}
+            />
+
             <style jsx>{`
                 .penjual-dashboard {
                     min-height: 100vh;
@@ -1134,6 +1302,188 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                     color: var(--text-secondary);
                     margin-top: 0.5rem;
                     font-size: 1rem;
+                }
+
+                .dashboard-actions {
+                    display: flex;
+                    gap: 1rem;
+                }
+
+                .btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.75rem 1.5rem;
+                    border: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all var(--transition-normal);
+                    font-size: 0.875rem;
+                }
+
+                .btn-primary {
+                    background: var(--primary);
+                    color: white;
+                }
+
+                .btn-primary:hover {
+                    background: #1d4ed8;
+                    transform: translateY(-1px);
+                    box-shadow: var(--shadow-md);
+                }
+
+                .btn-secondary {
+                    background: var(--surface-light);
+                    border: 1px solid var(--border);
+                    color: var(--text-primary);
+                }
+
+                .btn-secondary:hover {
+                    background: var(--surface);
+                    border-color: var(--primary);
+                    color: var(--primary);
+                }
+
+                .btn-ghost {
+                    background: transparent;
+                    color: var(--primary);
+                    border: 1px solid transparent;
+                }
+
+                .btn-ghost:hover {
+                    background: var(--surface-light);
+                    border-color: var(--border);
+                }
+
+                .btn-sm {
+                    padding: 0.5rem 1rem;
+                    font-size: 0.75rem;
+                }
+
+                /* Quick Export Section */
+                .quick-export-section {
+                    background: var(--surface);
+                    border: 1px solid var(--border);
+                    border-radius: 16px;
+                    padding: 1.5rem;
+                    margin-bottom: 2rem;
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .quick-export-section .section-header {
+                    border-bottom: none;
+                    padding: 0 0 1rem 0;
+                }
+
+                .quick-export-section .section-header h2 {
+                    margin: 0 0 0.5rem 0;
+                    font-size: 1.25rem;
+                }
+
+                .quick-export-section .section-header p {
+                    margin: 0;
+                    color: var(--text-secondary);
+                }
+
+                .export-buttons-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 1rem;
+                }
+
+                .export-option-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    padding: 1.25rem;
+                    background: var(--background);
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all var(--transition-normal);
+                    text-align: left;
+                    width: 100%;
+                }
+
+                .export-option-btn:hover {
+                    border-color: var(--primary);
+                    background: var(--surface-light);
+                    transform: translateY(-1px);
+                    box-shadow: var(--shadow-sm);
+                }
+
+                .export-option-icon {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 8px;
+                    background: rgba(59, 130, 246, 0.1);
+                    color: var(--info);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .export-option-info {
+                    flex: 1;
+                }
+
+                .export-option-info strong {
+                    display: block;
+                    color: var(--text-primary);
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    margin-bottom: 0.25rem;
+                }
+
+                .export-option-info span {
+                    color: var(--text-secondary);
+                    font-size: 0.75rem;
+                }
+
+                .export-arrow {
+                    color: var(--text-secondary);
+                    transition: all var(--transition-normal);
+                }
+
+                .export-option-btn:hover .export-arrow {
+                    color: var(--primary);
+                    transform: translateX(2px);
+                }
+
+                /* Export Button Small */
+                .export-btn-sm {
+                    position: absolute;
+                    top: 0.75rem;
+                    right: 0.75rem;
+                    background: var(--surface-light);
+                    border: 1px solid var(--border);
+                    border-radius: 6px;
+                    padding: 0.375rem;
+                    cursor: pointer;
+                    transition: all var(--transition-normal);
+                    color: var(--text-secondary);
+                }
+
+                .export-btn-sm:hover {
+                    background: var(--primary);
+                    color: white;
+                    transform: scale(1.05);
+                }
+
+                /* Header Actions */
+                .header-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                }
+
+                .content-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 2rem;
                 }
 
                 /* Enhanced Stats Grid */
@@ -1150,6 +1500,7 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                     padding: 1.5rem;
                     border-radius: 16px;
                     transition: all var(--transition-normal);
+                    position: relative;
                 }
 
                 .stat-card.glass:hover {
@@ -1486,7 +1837,7 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                     margin: 0;
                 }
 
-                /* Ratings Styles - DITAMBAHKAN */
+                /* Ratings Styles */
                 .rating-stats {
                     display: flex;
                     align-items: center;
@@ -1728,6 +2079,10 @@ const PenjualDashboard = ({ user, API_BASE }) => {
                         grid-template-columns: 1fr;
                     }
 
+                    .export-buttons-grid {
+                        grid-template-columns: 1fr;
+                    }
+
                     .mobile-fab {
                         display: block;
                         position: fixed;
@@ -1757,6 +2112,17 @@ const PenjualDashboard = ({ user, API_BASE }) => {
 
                     .mobile-add-btn {
                         display: block;
+                    }
+
+                    .content-header {
+                        flex-direction: column;
+                        gap: 1rem;
+                        align-items: flex-start;
+                    }
+
+                    .header-actions {
+                        width: 100%;
+                        justify-content: space-between;
                     }
 
                     .menu-header-mobile {

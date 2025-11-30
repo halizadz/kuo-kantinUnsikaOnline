@@ -6,15 +6,24 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Class CheckMahasiswa
+ * 
+ * Middleware untuk memastikan hanya user dengan role 'mahasiswa' yang bisa akses.
+ * Digunakan untuk protect route-route khusus mahasiswa seperti:
+ * - Membuat pesanan
+ * - Melihat riwayat pesanan
+ * - Memberikan rating
+ * - Fitur-fitur customer lainnya
+ */
 class CheckMahasiswa
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * Handle incoming request dan cek apakah user adalah mahasiswa
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Cek apakah user sudah login DAN user adalah mahasiswa
         if (!$request->user() || !$request->user()->isMahasiswa()) {
             return response()->json([
                 'success' => false,

@@ -6,15 +6,26 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Class CheckApprovedPenjual
+ * 
+ * Middleware untuk memastikan user adalah penjual yang sudah disetujui admin.
+ * Middleware ini melakukan 2 level checking:
+ * 1. User harus penjual (role = 'penjual')
+ * 2. Penjual harus sudah approved (is_approved = true)
+ * 
+ * Digunakan untuk protect fitur-fitur penjual yang hanya bisa diakses
+ * setelah akun mereka disetujui admin.
+ */
+
 class CheckApprovedPenjual
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Cek level 1: Apakah user adalah penjual?
         if (!$request->user() || !$request->user()->isPenjual()) {
             return response()->json([
                 'success' => false,
@@ -22,6 +33,7 @@ class CheckApprovedPenjual
             ], 403);
         }
 
+        // Cek level 2: Apakah penjual sudah diapprove admin?
         if (!$request->user()->is_approved) {
             return response()->json([
                 'success' => false,

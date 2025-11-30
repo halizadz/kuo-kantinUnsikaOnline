@@ -5,8 +5,24 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 
+/**
+ * Class CorsMiddleware
+ * 
+ * Middleware untuk menangani Cross-Origin Resource Sharing (CORS).
+ * CORS diperlukan ketika frontend dan backend berada di domain/port berbeda.
+ * 
+ * Dalam aplikasi ini:
+ * - Backend (Laravel API): http://localhost:8000
+ * - Frontend (React/Vue/etc): http://localhost:3000
+ * 
+ * Tanpa CORS, browser akan memblokir request dari frontend ke backend.
+ * Middleware ini menambahkan header CORS yang diperlukan ke setiap response.
+ */
 class CorsMiddleware
 {
+    /**
+     * Handle incoming request dan tambahkan CORS headers ke response
+     */
     public function handle(Request $request, Closure $next)
     {
         $response = $next($request);
